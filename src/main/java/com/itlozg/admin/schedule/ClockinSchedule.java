@@ -74,6 +74,8 @@ public class ClockinSchedule {
 
         System.out.println("master");
 
+        System.out.println("lhw");
+
         //System.out.println("--------接口参数--------" + authForm);
         //钉钉JSAPI鉴权接口, 接口说明见下文
         HttpPost httpPost = new HttpPost("https://dingding.weichai.com/dingding/pushNotify");
