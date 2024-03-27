@@ -72,7 +72,7 @@ public class ClockinSchedule {
 
         String authForm = "{" + "\"sendBy\":\"" + "501905df0b924bea868011f70a6f4dc3" + "\"," + "\"userIds\":\"" + userIds + "\"," + "\"title\":\"" + "打卡提醒" + "\"," + "\"content\":\"" + "距离上班时间还有10分钟，请您记得及时打卡" + "\"," + "\"msgType\":\"" + "card" + "\"," + "\"mediaId\":\"" + "https://img.tukuppt.com/png_preview/00/06/87/K8Il2IsTtm.jpg%21/fw/780" + "\"," + "\"url\":\"" + "http://221.215.96.250:8082/#/inside" + "\"," + "}";
 
-        System.out.println("--------接口参数--------" + authForm);
+        //System.out.println("--------接口参数--------" + authForm);
         //钉钉JSAPI鉴权接口, 接口说明见下文
         HttpPost httpPost = new HttpPost("https://dingding.weichai.com/dingding/pushNotify");
         httpPost.setEntity(new StringEntity(authForm, "utf-8"));
