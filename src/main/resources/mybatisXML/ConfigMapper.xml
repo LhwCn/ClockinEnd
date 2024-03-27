@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.ConfigMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.Config">
+        <id column="id" property="id"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="creation_date" property="creationDate"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="last_updated_by" property="lastUpdatedBy"/>
+        <result column="last_update_date" property="lastUpdateDate"/>
+        <result column="remarks" property="remarks"/>
+
+        <result column="category" property="category"/>
+        <result column="content" property="content"/>
+        <result column="introduction" property="introduction"/>
+        <result column="is_fixed" property="isFixed"/>
+    </resultMap>
+
+    <!--获取所有配置信息-->
+    <select id="findConfig" resultMap="BaseResultMap" resultType="com.itlozg.admin.entity.Config">
+        select a.* from sys_config a
+        where a.del_flag = #{request.DEL_FLAG_NORMAL}
+        <if test="request != null and request.category !=null and request.category !=''">
+            and a.category= #{request.category}
+        </if>
+        order by a.category asc
+    </select>
+
+    <select id="getTableByName" resultType="java.util.Map">
+        select * from JSONTABLE t
+    </select>
+
+    <!--删除-->
+    <update id="deleteData">
+        UPDATE sys_config SET
+            del_flag = #{DEL_FLAG_DELETE}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<video class="video" controls width="600px"></video>
+<button class="record-btn">record button</button>
+<a class="download">下载</a>
+
+<SCRIPT>
+    let btn = document.querySelector('.record-btn');
+    btn.addEventListener('click', async function() {
+        let stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true
+        })
+        let mime = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') ? 'video/webm; codecs=vp9' : 'video/webm';
+        let mediaRecorder = new MediaRecorder(stream, {
+            mimeType: mime
+        })
+        let chunks = [];
+        mediaRecorder.addEventListener('dataavailable', function(e) {
+            chunks.push(e.data);
+        })
+        mediaRecorder.addEventListener('stop', function() {
+            let blob = new Blob(chunks, {
+                type: chunks[0].type
+            })
+            let video = document.querySelector('video');
+            let url = URL.createObjectURL(blob);
+            video.src = url;
+            // 下载
+            let a = document.createElement('a')
+            a.href = url
+            a.download = 'video.webm'
+            a.click()
+        })
+
+        mediaRecorder.start()
+    })
+</SCRIPT>
+
+</body>
+</html>

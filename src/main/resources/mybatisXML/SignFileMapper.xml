@@ -1,0 +1,782 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.SignFileMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.SignFile">
+        <id column="id" property="id"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="creation_date" property="creationDate"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="last_updated_by" property="lastUpdatedBy"/>
+        <result column="last_update_date" property="lastUpdateDate"/>
+        <result column="remarks" property="remarks"/>
+
+        <result column="user_id" property="userId"/>
+        <result column="sign_date" property="signDate"/>
+        <result column="status" property="status"/>
+        <result column="come_must_time" property="comeMustTime"/>
+        <result column="leave_must_time" property="leaveMustTime"/>
+        <result column="come_time" property="comeTime"/>
+        <result column="leave_time" property="leaveTime"/>
+        <result column="come_longitude" property="comeLongitude"/>
+        <result column="come_latitude" property="comeLatitude"/>
+        <result column="come_address" property="comeAddress"/>
+        <result column="come_addressName" property="comeAddressName"/>
+        <result column="come_remarks" property="comeRemarks"/>
+        <result column="leave_longitude" property="leaveLongitude"/>
+        <result column="leave_latitude" property="leaveLatitude"/>
+        <result column="leave_address" property="leaveAddress"/>
+        <result column="leave_addressname" property="leaveAddressName"/>
+        <result column="leave_remarks" property="leaveRemarks"/>
+        <result column="sign_type" property="signType"/>
+        <result column="is_must" property="isMust"/>
+        <result column="is_leave" property="isLeave"/>
+        <result column="leave_type" property="leaveType"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="sign_way" property="signWay"/>
+        <result column="sign_way_pm" property="signWayPm"/>
+        <result column="update_time_flag" property="updateTimeFlag"/>
+        <result column="work_hours" property="workHours"/>
+        <result column="work_hours_real" property="workHoursReal"/>
+        <result column="sign_status" property="signStatus"/>
+        <result column="situation" property="situation"/>
+        <result column="need_check" property="needCheck"/>
+        <result column="normalCount" property="normalCount"/>
+        <result column="calibrationCount" property="calibrationCount"/>
+        <result column="exceptionCount" property="exceptionCount"/>
+        <result column="leaveCount" property="leaveCount"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="userNo" property="userNo"/>
+        <result column="userOa" property="userOa"/>
+
+        <result column="officeName" property="officeName"/>
+        <result column="sumNum" property="sumNum"/>
+        <result column="userNum" property="userNum"/>
+        <result column="average" property="average"/>
+        <result column="exportSignDate" property="exportSignDate"/>
+    </resultMap>
+
+    <select id="getCountByRuleId" resultType="Long">
+        select count(1) from sign_file where rule_id=#{ruleId} and del_flag='0'
+    </select>
+
+    <select id="getSignInfoByUserDay" resultMap="BaseResultMap">
+        select n.*,r.location_clock as locationClock,r.photograph_clock as photographClock,r.name as ruleName from sign_file n
+        left join sign_rule r on r.id=n.rule_id
+        where
+            TO_DAYS(n.sign_date) &gt;= TO_DAYS( #{dayVal})
+        and TO_DAYS(n.sign_date) &lt; TO_DAYS( #{dayVal})
+        and n.user_id=#{userId} and n.del_flag='0'
+--         and rownum = 1
+    </select>
+
+<!--    查询某一天的打卡统计-->
+    <select id="getSignFileByUserDay" resultMap="BaseResultMap">
+        select n.*,r.location_clock as locationClock,r.photograph_clock as photographClock,r.name as ruleName from sign_file n
+                                                                                                                       left join sign_rule r on r.id=n.rule_id
+        where
+            TO_DAYS(n.sign_date) = TO_DAYS( #{dayVal})
+          and n.user_id=#{userId} and n.del_flag='0'
+    </select>
+
+    <select id="getSignInfoByUserDayOld" resultMap="BaseResultMap">
+        select n.*,r.location_clock as locationClock,r.photograph_clock as photographClock,r.name as ruleName from sign_file n
+        left join sign_rule r on r.id=n.rule_id
+        where
+        to_char(n.sign_date,'yyyy-mm-dd') = #{dayVal} and
+         n.user_id=#{userId} and n.del_flag='0'
+        and rownum = 1
+    </select>
+
+    <select id="getSignInfoByUserMonth" resultMap="BaseResultMap">
+        select DATE_FORMAT(sign_date, '%Y-%m-%d') as signMonth,status,is_leave,sign_status,situation,is_must from sign_file
+        where
+            DATE_FORMAT(sign_date, '%Y-%m') = #{month} and
+        user_id=#{userId} and del_flag='0'
+        order by sign_date asc
+    </select>
+
+    <!--补卡申请-->
+    <update id="applyRepairSign">
+        update sign_file
+        SET situation = 2
+        where user_id = #{userId}
+          and sign_date = #{date}
+    </update>
+
+    <!--请假申请-->
+    <update id="applyLeaveSign">
+        update sign_file
+        SET situation = 6
+        where user_id = #{userId}
+          and sign_date = #{date}
+    </update>
+
+    <select id="getSignInfoByUserTime" resultMap="BaseResultMap">
+         select DATE_FORMAT(sign_date, '%Y-%m-%d') as signMonth,status,is_leave,sign_status,situation,is_must
+         from sign_file
+        where user_id= #{userId} and del_flag='0'
+        and DATE_FORMAT(sign_date, '%Y-%m-%d') &gt;= #{startDate} and DATE_FORMAT(sign_date, '%Y-%m-%d') &lt;= #{endDate}
+        order by sign_date asc
+    </select>
+
+
+    <select id="getSignAllInfoByUserMonth" resultMap="BaseResultMap"
+            resultType="com.itlozg.admin.entity.SignFile">
+        select * from sign_file
+        where
+            DATE_FORMAT(sign_date, '%Y-%m') = #{month} and
+        user_id=#{userId} and del_flag='0'
+        order by sign_date asc
+    </select>
+
+    <select id="getStatisticsByDay" resultMap="BaseResultMap">
+        select sf.*,su.name as userName,
+        so.name as officeName,
+        sr.name as ruleName,
+        ua.manufacturer as manufacturer,
+        su.no as userNo
+        from sign_file sf
+        left join sys_user su on su.id=sf.user_id
+        left join user_authinfo ua on ua.unique_code = su.uuid_code and ua.user_id = sf.id and ua.del_flag = 0
+        left join sys_office so on su.office_id=so.id
+        left join sign_rule sr on sr.id=sf.rule_id
+        WHERE sf.del_flag = '0'
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and sf.sign_date between to_date (#{request.startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and
+            to_date
+            ( #{request.endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        <if test="request != null and request.situation !=null and request.situation !=''">
+            and sf.situation = #{request.situation}
+        </if>
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                so.id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.ruleId !=null and request.ruleId !='' ">
+            AND sr.id = #{request.ruleId}
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            AND su.name like '%'||#{request.userName}||'%'
+        </if>
+        <if test="request != null and request.userNo !=null and request.userNo !='' ">
+            AND su.no = #{request.userNo}
+        </if>
+        order by sf.sign_date desc,ROWNUM
+    </select>
+
+
+    <select id="getStatisticsPhoneSign" resultMap="BaseResultMap">
+        select sf.*,su.name as userName,
+        so.name as officeName,
+        sr.name as ruleName,
+        ua.manufacturer as manufacturer,
+        su.no as userNo
+        from sign_file sf
+        left join sys_user su on su.id=sf.user_id
+        left join user_authinfo ua on ua.unique_code = su.uuid_code and ua.user_id = sf.id and ua.del_flag = 0
+        left join sys_office so on su.office_id=so.id
+        left join sign_rule sr on sr.id=sf.rule_id
+        WHERE sf.del_flag = '0'
+            and (sf.come_addressname is not null or sf.come_addressname is not null)
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and sf.sign_date between to_date (#{request.startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and
+            to_date
+            ( #{request.endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        <if test="request != null and request.situation !=null and request.situation !=''">
+            and sf.situation = #{request.situation}
+        </if>
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                so.id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.ruleId !=null and request.ruleId !='' ">
+            AND sr.id = #{request.ruleId}
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            AND su.name like '%'||#{request.userName}||'%'
+        </if>
+        order by sf.sign_date desc,ROWNUM
+    </select>
+
+    <select id="getAllStatisticsBySituationYesterday" resultMap="BaseResultMap">
+        select sf.id,
+               su.name       as userName,
+               su.no         as userNo,
+               su.login_name as userOa
+        from sign_file sf
+        left join sys_user su on su.id = sf.user_id
+        WHERE sf.del_flag = '0'
+          and sf.come_addressname is not null
+          and sf.sign_date between Trunc(SYSDATE - 1) and Trunc(SYSDATE)
+          and sf.situation = '1'
+    </select>
+
+    <select id="getStatisticsByDayOnce" resultMap="BaseResultMap">
+        select sf.*,su.name as userName,
+        so.name as officeName,
+        sr.name as ruleName,
+        ua.manufacturer as manufacturer,
+        su.no as userNo
+        from sign_file sf
+        left join sys_user su on su.id=sf.user_id
+        left join user_authinfo ua on ua.unique_code = su.uuid_code and ua.user_id = sf.id and ua.del_flag = 0
+        left join sys_office so on su.office_id=so.id
+        left join sign_rule sr on sr.id=sf.rule_id
+        WHERE sf.del_flag = '0'
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and sf.sign_date between to_date (#{request.startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and
+            to_date
+            ( #{request.endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        <if test="request != null and request.situation !=null and request.situation !=''">
+            and sf.situation = #{request.situation}
+        </if>
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                so.id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.ruleId !=null and request.ruleId !='' ">
+            AND sr.id = #{request.ruleId}
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            AND su.name like '%'||#{request.userName}||'%'
+        </if>
+        and sf.user_id not in (
+
+        select id from sys_user where (office_id in(
+        select id from sys_office start with id='20180304002038970-5238-1FEAC4B3A' connect by prior
+        id=parent_id
+        ) or dept_id in (
+        select id from sys_office start with id='20180304002038970-5238-1FEAC4B3A' connect by prior
+        id=parent_id
+        ))
+        and (
+        HR_POST like '10%'
+        or HR_POST like '08%'
+        or HR_POST like '8%'
+        )
+        )
+        order by sf.sign_date desc,ROWNUM
+    </select>
+
+    <select id="getStatisticsByMonth" resultType="com.itlozg.admin.entity.SignFile">
+        select a.*,su.name as userName,su.no as userNo,so.name as officeName,so.id as officeId,b.signTimes as
+        signTimes,
+        c.lateTimes as lateTimes ,d.earlyTimes as earlyTimes,e.lateEarlyTimes as lateEarlyTimes,
+        f.absentTimes as absentTimes,g.amAbsentTimes as amAbsentTimes,h.pmAbsentTimes as pmAbsentTimes,
+        sr.name as ruleName
+        from (select count(*) as mustSignTimes,user_id as userId,to_char(sf.sign_date,'yyyy-mm')
+        as signMonth from sign_file sf
+        where sf.is_must='0' and sf.del_flag='0'
+        group by to_char(sf.sign_date,'yyyy-mm'),sf.user_id) a
+        left join sys_user su on su.id=a.userId
+        left join sys_office so on so.id=su.office_id
+        left join(select count(*) as signTimes,user_id,DATE_FORMAT(sign_date, '%Y-%m') as signDate
+        from sign_file where is_must='0' and status='0' and del_flag='0'
+        group by DATE_FORMAT(sign_date, '%Y-%m'),user_id) b on a.userId=b.user_id and
+        a.signMonth=b.signDate
+        left join(select count(*) as lateTimes,user_id,DATE_FORMAT(sign_date, '%Y-%m') as signDate
+        from sign_file where is_must='0' and status='1' and del_flag='0'
+        group by DATE_FORMAT(sign_date, '%Y-%m'),user_id) c on a.userId=c.user_id and
+        a.signMonth=c.signDate
+        left join(select count(*) as earlyTimes,user_id,DATE_FORMAT(sign_date, '%Y-%m') as signDate
+        from sign_file where is_must='0' and status='2' and del_flag='0'
+        group by DATE_FORMAT(sign_date, '%Y-%m'),user_id) d on a.userId=d.user_id and
+        a.signMonth=d.signDate
+        left join(select count(*) as lateEarlyTimes,user_id,DATE_FORMAT(sign_date, '%Y-%m') as signDate
+        from sign_file where is_must='0' and status='3' and del_flag='0'
+        group by DATE_FORMAT(sign_date, '%Y-%m'),user_id) e on a.userId=e.user_id and
+        a.signMonth=e.signDate
+        left join(select count(*) as absentTimes,user_id,DATE_FORMAT(sign_date, '%Y-%m') as signDate
+        from sign_file where is_must='0' and status='10' and del_flag='0'
+        group by DATE_FORMAT(sign_date, '%Y-%m'),user_id) f on a.userId=f.user_id and
+        a.signMonth=f.signDate
+        left join(select count(*) as amAbsentTimes,user_id,DATE_FORMAT(sign_date, '%Y-%m') as signDate
+        from sign_file where is_must='0' and status='11' and del_flag='0'
+        group by DATE_FORMAT(sign_date, '%Y-%m'),user_id) g on a.userId=g.user_id and
+        a.signMonth=g.signDate
+        left join(select count(*) as pmAbsentTimes,user_id,DATE_FORMAT(sign_date, '%Y-%m') as signDate
+        from sign_file where is_must='0' and status='12' and del_flag='0'
+        group by DATE_FORMAT(sign_date, '%Y-%m'),user_id) h on a.userId=h.user_id and
+        a.signMonth=h.signDate
+        left join sign_final sfl on a.userId = sfl.USER_ID and sfl.DEL_FLAG = 0
+        left join sign_rule sr on sr.id=sfl.rule_id
+        where 1=1
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and a.signMonth between #{request.startDate} and #{request.endDate}
+        </if>
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                so.id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            AND su.name like '%'||#{request.userName}||'%'
+        </if>
+        <if test="request != null and request.userNo !=null and request.userNo !='' ">
+            AND su.no = #{request.userNo}
+        </if>
+        order by a.signMonth desc,ROWNUM
+    </select>
+
+
+    <select id="getSignFileData" resultMap="BaseResultMap">
+        select * from sign_file
+        where sign_date between to_date (#{startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and
+            to_date( #{endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        and user_id=#{userId} and del_flag='0'
+        order by sign_date asc
+    </select>
+
+    <select id="getSignFileDataByOfficeId" resultMap="BaseResultMap">
+        select
+        a.user_id,
+        a.sign_date,
+        a.status,
+        a.come_must_time,
+        a.leave_must_time,
+        a.come_time,
+        a.leave_time,
+        a.leave_address,
+        a.sign_type,
+        a.is_leave,
+        a.leave_type,
+        su.name as userName,
+        so.name as officeName
+        from sign_file a
+        left join sys_user su on a.user_id = su.id
+        left join sys_office so on su.office_id = so.id
+        where a.sign_date between to_date (#{startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and
+        to_date( #{endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        and a.del_flag='0'
+        and a.user_id in
+        <foreach collection="userIds" item="userIds" index="index"
+                 open="(" close=")" separator=",">
+            #{userIds}
+        </foreach>
+    </select>
+
+    <select id="getAreaSubsidy" resultMap="BaseResultMap">
+        select
+        a.*,
+        c.calibrationCount as calibrationCount,
+        d.exceptionCount as exceptionCount,
+        e.subsidyCount as subsidyCount,
+        su.name as userName,
+        su.no as userNo,
+        so.name as officeName,
+        so.id as officeId
+        from
+        (select count(*) as mustSignTimes,user_id, to_char(sf.sign_date, 'yyyy-mm') as signMonth from
+        sign_file sf where
+        sf.is_must = '0' and sf.del_flag = '0' group by to_char(sf.sign_date, 'yyyy-mm'), sf.user_id ) a
+        left join (select count(*) as calibrationCount , sf2.user_id,to_char(sf2.sign_date, 'yyyy-mm')as
+        signMonth from
+        sign_file sf2 where sf2.situation = 0 and sf2.is_leave is not null and sf2.del_flag = 0 group by
+        to_char(sf2.sign_date, 'yyyy-mm'), sf2.user_id) c on c.user_id = a.user_id and a.signMonth =
+        c.signMonth
+        left join (select count(*) as exceptionCount , sf3.user_id,to_char(sf3.sign_date, 'yyyy-mm')as
+        signMonth from
+        sign_file sf3 where sf3.situation = 1 and sf3.del_flag = 0 group by
+        to_char(sf3.sign_date, 'yyyy-mm'), sf3.user_id) d on d.user_id = a.user_id and a.signMonth=d.signMonth
+        left join (SELECT userId,signMonth,sum(subsidyCount) as subsidyCount FROM
+        (SELECT sf.USER_ID as userId,to_char(sf.sign_date, 'yyyy-mm') as signMonth,case when sf.WORK_HOURS > 6*60 then count(*) *1 else count(*)*0.5 end subsidyCount
+        from SIGN_FILE sf
+        left join subsidy_dict sd on (sf.COME_ADDRESS like '%'||sd.POSITION||'%' )
+        left join subsidy_dict sd2 on (sf.LEAVE_ADDRESS like '%'||sd2.POSITION||'%')
+        where sf.DEL_FLAG = 0
+        and sd.POSITION is not null
+        and sd2.POSITION is not null
+        and sf.SITUATION = 0
+        group by sf.USER_ID,to_char(sf.sign_date, 'yyyy-mm'),sf.WORK_HOURS
+        union all
+        SELECT sf.USER_ID as userId,to_char(sf.sign_date, 'yyyy-mm') as signMonth,count(*) *0.5 as subsidyCount
+        from
+        SIGN_FILE sf
+        left join subsidy_dict sd on (sf.COME_ADDRESS like '%'||sd.POSITION||'%' )
+        left join subsidy_dict sd2 on (sf.LEAVE_ADDRESS like '%'||sd2.POSITION||'%')
+        where sf.DEL_FLAG = 0
+        and ((sd.POSITION is not null and sd2.POSITION is null)
+        or (sd.POSITION is null and sd2.POSITION is not null))
+        and sf.SITUATION = 0
+        group by sf.USER_ID,to_char(sf.sign_date, 'yyyy-mm')) temp
+        group by userId,signMonth) e on (e.userId = a.user_id and a.signMonth = e.signMonth)
+        left join sys_user su on su.id = a.user_id
+        left join sys_office so on so.id = su.office_id
+        where 1=1
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and a.signMonth between #{request.startDate} and #{request.endDate}
+        </if>
+        <if test="offices != null ">
+            and so.id in
+            <foreach collection="offices" index="index" item="item" separator="," open="(" close=")">
+                #{item.id}
+            </foreach>
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            and su.name like '%'||#{request.userName}||'%'
+        </if>
+        <if test="request != null and request.userNo !=null and request.userNo !='' ">
+            AND su.no = #{request.userNo}
+        </if>
+        order by a.signMonth desc,ROWNUM
+
+
+    </select>
+
+    <select id="selectMonthErrors" resultMap="BaseResultMap">
+        select s.sign_date,
+        s.come_time,
+        s.leave_time,
+        (case
+          when s.sign_status = '1' then
+           '0.1天#迟到'
+          when s.sign_status = '2' then
+           '0.1天#早退'
+          when s.sign_status = '3' then
+           '0.2天#迟到+早退'
+          when s.sign_status = '10' then
+           '1天#全天缺卡'
+          when s.sign_status = '11' then
+           '0.5天#上午缺卡'
+          when s.sign_status = '12' then
+           '0.5天#下午缺卡'
+        end) remarks
+   from SIGN_FILE s
+  where del_flag = '0'
+    and user_id = #{userId}
+    and to_char(SIGN_DATE, 'yyyy-mm') = #{month}
+    and situation = '1'
+    </select>
+
+    <select id="getStatisByMonth" resultMap="BaseResultMap">
+        select
+        a.*,
+        b.normalCount as normalCount,
+        c.calibrationCount as calibrationCount,
+        d.exceptionCount as exceptionCount,
+        f.leaveCount as leaveCount,
+        f1.leaveCount as leaveCountQj,
+        f2.leaveCount as leaveCountCc,
+        f3.leaveCount as leaveCountWc,
+        su.name as userName,
+        su.no as userNo,
+        so.name as officeName,
+        so.id as officeId,
+        sr.name as ruleName
+        from
+        (select count(*) as mustSignTimes,user_id, to_char(sf.sign_date, 'yyyy-mm') as signMonth from
+        sign_file sf where
+        sf.is_must = '0' and sf.del_flag = '0' group by to_char(sf.sign_date, 'yyyy-mm'), sf.user_id ) a
+        left join (select count(*) as normalCount , sf1.user_id,to_char(sf1.sign_date, 'yyyy-mm')as signMonth
+        from
+        sign_file sf1 where sf1.situation = 0 and sf1.is_leave is null and sf1.del_flag = 0 group by
+        to_char(sf1.sign_date, 'yyyy-mm'), sf1.user_id) b on b.user_id = a.user_id and a.signMonth=b.signMonth
+        left join (select count(*) as calibrationCount , sf2.user_id,to_char(sf2.sign_date, 'yyyy-mm')as
+        signMonth from
+        sign_file sf2 where sf2.situation = 0 and sf2.is_leave is not null and sf2.del_flag = 0 group by
+        to_char(sf2.sign_date, 'yyyy-mm'), sf2.user_id) c on c.user_id = a.user_id and a.signMonth =
+        c.signMonth
+        left join (select count(*) as exceptionCount , sf3.user_id,to_char(sf3.sign_date, 'yyyy-mm')as
+        signMonth from
+        sign_file sf3 where sf3.situation = 1 and sf3.del_flag = 0 group by
+        to_char(sf3.sign_date, 'yyyy-mm'), sf3.user_id) d on d.user_id = a.user_id and a.signMonth=d.signMonth
+        left join (select count(*) as leaveCount , sf4.user_id,to_char(sf4.sign_date, 'yyyy-mm')as signMonth
+        from
+        sign_file sf4 where sf4.is_leave &lt;&gt; 0 and sf4.del_flag = 0 group by to_char(sf4.sign_date,
+        'yyyy-mm'),
+        sf4.user_id) f on f.user_id = a.user_id and a.signMonth=f.signMonth
+        left join (select count(*) as leaveCount , sf4.user_id,to_char(sf4.sign_date, 'yyyy-mm')as signMonth
+        from
+        sign_file sf4 where sf4.is_leave = 1 and sf4.del_flag = 0 group by to_char(sf4.sign_date, 'yyyy-mm'),
+        sf4.user_id) f1 on f1.user_id = a.user_id and a.signMonth=f1.signMonth
+        left join (select count(*) as leaveCount , sf4.user_id,to_char(sf4.sign_date, 'yyyy-mm')as signMonth
+        from
+        sign_file sf4 where sf4.is_leave = 2 and sf4.del_flag = 0 group by to_char(sf4.sign_date, 'yyyy-mm'),
+        sf4.user_id) f2 on f2.user_id = a.user_id and a.signMonth=f2.signMonth
+        left join (select count(*) as leaveCount , sf4.user_id,to_char(sf4.sign_date, 'yyyy-mm')as signMonth
+        from
+        sign_file sf4 where sf4.is_leave =3 and sf4.del_flag = 0 group by to_char(sf4.sign_date, 'yyyy-mm'),
+        sf4.user_id) f3 on f3.user_id = a.user_id and a.signMonth=f3.signMonth
+        left join sys_user su on su.id = a.user_id
+        left join sys_office so on so.id = su.office_id
+        left join sign_final sfl on a.user_id = sfl.USER_ID and sfl.DEL_FLAG = 0
+        left join sign_rule sr on sr.id = sfl.rule_id
+        where 1=1
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and a.signMonth between #{request.startDate} and #{request.endDate}
+        </if>
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                so.id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            and su.name like '%'||#{request.userName}||'%'
+        </if>
+        <if test="request != null and request.userNo !=null and request.userNo !='' ">
+            AND su.no = #{request.userNo}
+        </if>
+        order by a.signMonth desc,ROWNUM
+    </select>
+
+    <update id="updateSignFileData">
+        update sign_file set
+        last_update_date=SYSDATE,
+        is_leave=#{isLeave},
+        leave_type=#{leaveType},
+        situation=#{situation},
+        work_hours_real=#{workHours},
+        remarks=#{levelId}
+         where id=#{id}
+    </update>
+
+    <update id="updateSignFileInfo">
+        update sign_file set
+        last_update_date=SYSDATE,
+        is_leave=#{isLeave},
+        situation='0',
+        work_hours_real=#{workHours}
+         where id=#{id}
+    </update>
+
+    <update id="updateSignFileDataBusiness">
+        update sign_file set
+        last_update_date=SYSDATE,
+        is_leave=#{isLeave}
+         where id=#{id}
+    </update>
+    <update id="updateSignStatus">
+         update sign_file set
+        last_update_date=SYSDATE,
+        situation='1'
+        where user_id = #{userId}
+        and DATE_FORMAT(sign_date, '%Y-%m-%d') &gt;= #{firstDay} and  DATE_FORMAT(sign_date, '%Y-%m-%d') &lt;= #{lastDay}
+    </update>
+
+    <select id="getSignFileNoNormal" resultMap="BaseResultMap" resultType="com.itlozg.admin.entity.SignFile">
+        select n.*,r.location_clock as locationClock,r.photograph_clock as photographClock,r.name as ruleName from sign_file n
+        left join sign_rule r on r.id=n.rule_id
+        where
+        n.sign_date &gt;= to_date( #{dayVal},'yyyy-mm-dd')
+        and n.sign_date &lt; to_date( #{dayVal},'yyyy-mm-dd')+1
+        and n.user_id=#{userId} and n.del_flag='0'
+        and n.is_leave is null
+        and n.situation!=0
+        and rownum = 1
+    </select>
+
+    <select id="getSignFile" resultMap="BaseResultMap" resultType="com.itlozg.admin.entity.SignFile">
+        select n.*,r.location_clock as locationClock,r.photograph_clock as photographClock,r.name as ruleName from sign_file n
+        left join sign_rule r on r.id=n.rule_id
+        where
+        n.sign_date &gt;= to_date( #{dayVal},'yyyy-mm-dd')
+        and n.sign_date &lt; to_date( #{dayVal},'yyyy-mm-dd')+1
+        and n.user_id=#{userId} and n.del_flag='0'
+        and rownum = 1
+    </select>
+
+    <select id="getStatisticsByDayOffice" resultMap="BaseResultMap"
+            resultType="com.itlozg.admin.entity.SignFile">
+        --大数据
+        select so.name as officeName ,
+        to_char(t.sign_date,'yyyy-mm-dd') as exportSignDate,
+        sum(nvl(t.work_hours_real,0)) as sumNum,
+        count(1)  as userNum,
+        round(avg(nvl(t.work_hours_real,0)),2)as average
+        from sign_file t,
+        (select name from sys_office where id = '20171030092149404-9A83-8943EF0CB'and del_flag = 0) so
+        where user_id in (select id from sys_user where del_flag='0' and office_id in
+        (select id from sys_office start with id='20171030092149404-9A83-8943EF0CB' connect by parent_id =prior id)or dept_id in
+        (select id from sys_office start with id='20171030092149404-9A83-8943EF0CB' connect by parent_id =prior id))
+        and t.sign_date &gt;= to_date(#{request.startDate},'yyyy-mm-dd')
+        and t.sign_date &lt; to_date(#{request.startDate},'yyyy-mm-dd')+1
+        and t.work_hours_real > 0
+        and nvl(t.is_leave,0) = '0'
+        group by to_char(t.sign_date,'yyyy-mm-dd'),so.name
+
+        union
+
+        --企信部
+        select so.name as officeName ,
+        to_char(t.sign_date,'yyyy-mm-dd') as exportSignDate,
+        sum(nvl(t.work_hours_real,0)) as sumNum,
+        count(1)  as userNum,
+        round(avg(nvl(t.work_hours_real,0)),2)as average
+        from sign_file t,
+        (select name from sys_office where id = '20171018165248099-CBCA-35C26ED3C'and del_flag = 0) so
+        where user_id in (select id from sys_user where del_flag='0' and office_id in
+        (select id from sys_office start with id='20171018165248099-CBCA-35C26ED3C' connect by parent_id =prior id)or dept_id in
+        (select id from sys_office start with id='20171018165248099-CBCA-35C26ED3C' connect by parent_id =prior id))
+        and t.sign_date &gt;= to_date(#{request.startDate},'yyyy-mm-dd')
+        and t.sign_date &lt; to_date(#{request.startDate},'yyyy-mm-dd')+1
+        and t.work_hours_real > 0
+        and nvl(t.is_leave,0) = '0'
+        group by to_char(t.sign_date,'yyyy-mm-dd'),so.name
+
+        union
+
+        --发动机研究院
+        select so.name as officeName ,
+        to_char(t.sign_date,'yyyy-mm-dd') as exportSignDate,
+        sum(nvl(t.work_hours_real,0)) as sumNum,
+        count(1)  as userNum,
+        round(avg(nvl(t.work_hours_real,0)),2)as average
+        from sign_file t,
+        (select name from sys_office where id = '20180304002038970-5238-1FEAC4B3A'and del_flag = 0) so
+        where user_id in (select id from sys_user where del_flag='0' and office_id in
+        (select id from sys_office start with id='20180304002038970-5238-1FEAC4B3A' connect by parent_id =prior id)or dept_id in
+        (select id from sys_office start with id='20180304002038970-5238-1FEAC4B3A' connect by parent_id =prior id))
+        and t.sign_date &gt;= to_date(#{request.startDate},'yyyy-mm-dd')
+        and t.sign_date &lt; to_date(#{request.startDate},'yyyy-mm-dd')+1
+        and t.work_hours_real > 0
+        and nvl(t.is_leave,0) = '0'
+        group by to_char(t.sign_date,'yyyy-mm-dd'),so.name
+
+        union
+
+        --应用工程中心
+        select so.name as officeName ,
+        to_char(t.sign_date,'yyyy-mm-dd') as exportSignDate,
+        sum(nvl(t.work_hours_real,0)) as sumNum,
+        count(1)  as userNum,
+        round(avg(nvl(t.work_hours_real,0)),2)as average
+        from sign_file t,
+        (select name from sys_office where id = '20171018165248936-829A-6B0A13CA8'and del_flag = 0) so
+        where user_id in (select id from sys_user where del_flag='0' and office_id in
+        (select id from sys_office start with id='20171018165248936-829A-6B0A13CA8' connect by parent_id =prior id)or dept_id in
+        (select id from sys_office start with id='20171018165248936-829A-6B0A13CA8' connect by parent_id =prior id))
+        and t.sign_date &gt;= to_date(#{request.startDate},'yyyy-mm-dd')
+        and t.sign_date &lt; to_date(#{request.startDate},'yyyy-mm-dd')+1
+        and t.work_hours_real > 0
+        and nvl(t.is_leave,0) = '0'
+        group by to_char(t.sign_date,'yyyy-mm-dd'),so.name
+
+        union
+
+        --新科技研究院
+        select so.name as officeName ,
+        to_char(t.sign_date,'yyyy-mm-dd') as exportSignDate,
+        sum(nvl(t.work_hours_real,0)) as sumNum,
+        count(1)  as userNum,
+        round(avg(nvl(t.work_hours_real,0)),2)as average
+        from sign_file t,
+        (select name from sys_office where id = 'de3d8957253c439b9a970e5d7d2dc697'and del_flag = 0) so
+        where user_id in (select id from sys_user where del_flag='0' and office_id in
+        (select id from sys_office start with id='de3d8957253c439b9a970e5d7d2dc697' connect by parent_id =prior id)or dept_id in
+        (select id from sys_office start with id='de3d8957253c439b9a970e5d7d2dc697' connect by parent_id =prior id))
+        and t.sign_date &gt;= to_date(#{request.startDate},'yyyy-mm-dd')
+        and t.sign_date &lt; to_date(#{request.startDate},'yyyy-mm-dd')+1
+        and t.work_hours_real > 0
+        and nvl(t.is_leave,0) = '0'
+        group by to_char(t.sign_date,'yyyy-mm-dd'),so.name
+
+    </select>
+
+    <select id="getPageBySysDate" resultMap="BaseResultMap">
+        select sf.*,su.name as userName,
+        so.name as officeName,
+        sr.name as ruleName,
+        ua.manufacturer as manufacturer,
+        su.no as userNo
+        from sign_file sf
+        left join sys_user su on su.id=sf.user_id
+        left join user_authinfo ua on ua.unique_code = su.uuid_code and ua.user_id = sf.id and ua.del_flag = 0
+        left join sys_office so on su.office_id=so.id
+        left join sign_rule sr on sr.id=sf.rule_id
+        WHERE sf.del_flag = '0'
+        <if test="request != null and request.dayVal !=null and request.dayVal !=''">
+            and sf.sign_date between to_date (#{request.dayVal}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and
+            to_date
+            ( #{request.dayVal}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        <if test="request != null and request.situation !=null and request.situation !=''">
+            and sf.user_id in ( select id from sys_user where office_id in ( select id from sys_office start
+            with code = #{request.situation} connect by parent_id = PRIOR id and del_flag=0))
+        </if>
+        order by sf.user_id desc,ROWNUM
+    </select>
+
+    <!--根据 打卡类型,办公室id和时间 获取统计数据-->
+    <select id="getBySignType" resultMap="BaseResultMap">
+        select sf.*,su.name as userName,
+        so.name as officeName,
+        sr.name as ruleName,
+        ua.manufacturer as manufacturer,
+        su.no as userNo
+        from sign_file sf
+        left join sys_user su on su.id=sf.user_id
+        left join user_authinfo ua on ua.unique_code = su.uuid_code and ua.user_id = sf.id and ua.del_flag = 0
+        left join sys_office so on su.office_id=so.id
+        left join sign_rule sr on sr.id=sf.rule_id
+        WHERE sf.del_flag = '0'
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and sf.sign_date between to_date (#{request.startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and
+            to_date
+            ( #{request.endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        <if test="request != null and request.situation !=null and request.situation !=''">
+            and sf.situation = #{request.situation}
+        </if>
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                so.id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.ruleId !=null and request.ruleId !='' ">
+            AND sr.id = #{request.ruleId}
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            AND su.name like '%'||#{request.userName}||'%'
+        </if>
+        <if test="request != null and request.signType !=null and request.signType !='' ">
+            AND sf.sign_type = #{request.signType}
+        </if>
+        order by sf.sign_date desc,ROWNUM
+    </select>
+    <select id="getSignInfoToPage" resultType="com.itlozg.admin.entity.SignFile">
+        select s.user_id,s.user_name,v.deptname,s.sign_date,s.come_time,s.come_address,s.leave_time,s.leave_address,
+        s.is_leave,s.situation,s.is_must FROM sign_file s RIGHT JOIN v_employeesimple v on v.usercode = s.user_id
+        <where>
+            <if test="username != null and username !=''">
+                AND s.user_name like concat('%', #{username,jdbcType=VARCHAR},'%')
+            </if>
+            <if test="deptname != null and deptname !=''">
+                and v.deptname like concat('%', #{deptname,jdbcType=VARCHAR},'%')
+            </if>
+            <if test="startTime != null and startTime !=''">
+                and TO_DAYS(s.sign_date) >= TO_DAYS(#{startTime})
+            </if>
+            <if test="endTime != null and endTime !=''">
+                and To_days(s.sign_date) &lt; (TO_DAYS(#{endTime})+1)
+            </if>
+                and s.del_flag = '0'
+        </where>
+        ORDER BY TO_DAYS(s.sign_date) DESC
+    </select>
+</mapper>

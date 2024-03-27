@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.SignNextAllMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.SignNextAll">
+        <id column="id" property="id"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="creation_date" property="creationDate"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="last_updated_by" property="lastUpdatedBy"/>
+        <result column="last_update_date" property="lastUpdateDate"/>
+        <result column="remarks" property="remarks"/>
+
+        <result column="sign_id" property="signId"/>
+        <result column="user_id" property="userId"/>
+        <result column="sign_time" property="signTime"/>
+        <result column="sign_date" property="signDate"/>
+        <result column="sign_type" property="signType"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="rule_type" property="ruleType"/>
+        <result column="sign_longitude" property="signLongitude"/>
+        <result column="sign_latitude" property="signLatitude"/>
+        <result column="sign_address" property="signAddress"/>
+        <result column="sign_addressname" property="signAddressName"/>
+        <result column="sign_remarks" property="signRemarks"/>
+        <result column="sign_photo" property="signPhoto"/>
+        <result column="sign_way" property="signWay"/>
+        <result column="sign_way_pm" property="signWayPm"/>
+        <result column="root_val" property="rootVal"/>
+    </resultMap>
+
+    <!--查询用户内勤打卡-->
+    <select id="getSignDetailByUserDay" resultMap="BaseResultMap">
+        select * from sign_next_all
+        where to_days(sign_date) &gt;= to_days( #{signDay})
+        and to_days(sign_date) &lt; to_days( #{signDay})+1
+        and user_id=#{userId} and del_flag='0'
+        order by sign_time
+    </select>
+
+    <select id="getSignDetailByUserDayOld" resultMap="BaseResultMap">
+        select * from sign_next_all
+        where
+         to_char(sign_date,'yyyy-mm-dd') = #{signDay} and
+         user_id=#{userId} and del_flag='0'
+         order by creation_date
+    </select>
+
+    <select id="getSignDetailByNextId" resultMap="BaseResultMap">
+        select * from sign_next_all
+        where
+         sign_id=#{nextId} and del_flag='0'
+         order by creation_date asc
+    </select>
+
+    <select id="getSignDetailByNextIdAndType" resultMap="BaseResultMap">
+        select * from sign_next_all
+        where
+         sign_id=#{nextId} and del_flag='0'
+         and sign_type=#{typeVal}
+         and rownum=1
+         order by creation_date desc
+    </select>
+
+</mapper>

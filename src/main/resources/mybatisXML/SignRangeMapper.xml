@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.SignRangeMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.SignLongitudeLatitude">
+        <id column="id" property="id"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="creation_date" property="creationDate"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="last_updated_by" property="lastUpdatedBy"/>
+        <result column="last_update_date" property="lastUpdateDate"/>
+        <result column="remarks" property="remarks"/>
+
+        <result column="longitude" property="longitude"/>
+        <result column="latitude" property="latitude"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="fence_order" property="fenceOrder"/>
+        <result column="radius" property="radius"/>
+    </resultMap>
+    <select id="findFenceByRuleId" resultType="com.itlozg.admin.entity.SignLongitudeLatitude">
+        select sr.*, sll.latitude, sll.longitude
+        from sign_range sr
+                 left join sign_lon_lat sll on sll.range_id = sr.id
+        where sll.del_flag = 0 and sr.id = #{rangeId}
+        ORDER BY sll.fence_order
+    </select>
+</mapper>

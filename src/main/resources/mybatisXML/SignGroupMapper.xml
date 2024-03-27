@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.SignGroupMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.SignGroup">
+        <id column="id" property="id"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="depart_name" property="departName"/>
+        <result column="parent_id" property="parentId"/>
+    </resultMap>
+
+    <!-- 获取所有的考勤组-->
+    <select id="getList" resultType="com.itlozg.admin.entity.SignGroup">
+        select `id`,
+               `rule_id`,
+               `depart_name`,
+               `parent_id`,
+               `free_flag`,
+               `cross_flag`
+        from sign_group
+    </select>
+
+    <!--获取上班时间前十分钟，还没有打卡的人员工号集合-->
+    <select id="getMsgNos" resultType="java.lang.String">
+        SELECT GROUP_CONCAT(f.user_id SEPARATOR ',') AS msgNos
+        FROM sign_final f
+        WHERE NOT EXISTS(SELECT 1 FROM sign_next_all na WHERE f.user_id = na.user_id AND na.sign_date = #{dateNow})
+          AND NOT EXISTS(SELECT 1 FROM sign_legwork l WHERE f.user_id = l.user_id AND l.sign_legwork_date = #{dateNow})
+          AND CURTIME() > (SELECT STR_TO_DATE(n.come_must_time, '%H:%i') -
+            INTERVAL 10 MINUTE
+        FROM
+            sign_next n
+        WHERE
+            f.user_id = n.user_id
+          AND n.sign_date = #{dateNow}
+            )
+          AND CURTIME()
+         &lt;
+            (
+        SELECT
+            STR_TO_DATE( n.come_must_time, '%H:%i' )
+        FROM
+            sign_next n
+        WHERE
+            f.user_id = n.user_id
+          AND n.sign_date = #{dateNow}
+            )
+    </select>
+
+</mapper>

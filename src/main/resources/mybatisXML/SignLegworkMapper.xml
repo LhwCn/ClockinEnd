@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.SignLegworkMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.SignLegwork">
+        <id column="id" property="id"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="creation_date" property="creationDate"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="last_updated_by" property="lastUpdatedBy"/>
+        <result column="last_update_date" property="lastUpdateDate"/>
+        <result column="remarks" property="remarks"/>
+
+        <result column="user_id" property="userId"/>
+        <result column="sign_time" property="signTime"/>
+        <result column="sign_longitude" property="signLongitude"/>
+        <result column="sign_latitude" property="signLatitude"/>
+        <result column="sign_photo" property="signPhoto"/>
+        <result column="clock_in_site" property="clockInSite"/>
+
+        <result column="userName" property="userName"/>
+        <result column="officeName" property="officeName"/>
+        <result column="root_val" property="rootVal"/>
+    </resultMap>
+
+    <select id="getStatisticsByDay" resultMap="BaseResultMap">
+      select  a.*,
+         b.name  as userName,
+         c.name  as officeName
+        from SIGN_LEGWORK a
+        left join sys_user b on a.user_id= b.id
+        left join sys_office c on b.office_id =c.id
+        where a.del_flag = 0
+        and a.user_id = #{request.userId}
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and a.creation_date between to_date (#{request.startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and to_date
+            ( #{request.endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+    </select>
+
+    <select id="getStatisticsByUserId" resultMap="BaseResultMap">
+        select * from SIGN_LEGWORK
+        where del_flag = 0
+        and user_id = #{request.userId}
+        order by creation_date desc
+    </select>
+
+    <select id="getPermissionPage" resultMap="BaseResultMap">
+        select a.user_id,
+        b.name as userName,
+        b.no as userNo,
+        d.name as officeName
+        from SIGN_LEGWORK a , sys_office d,sys_user b
+        where a.del_flag = 0
+        and b.del_flag = 0
+        and a.user_id=b.id
+        and b.office_id = d.id
+        <if test="offices != null and offices.size() >0">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                b.office_id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            AND b.name like '%'||#{request.userName}||'%'
+        </if>
+        <if test="request != null and request.userNo !=null and request.userNo !='' ">
+            AND b.no = #{request.userNo}
+        </if>
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and a.creation_date between to_date (#{request.startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and to_date
+            ( #{request.endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        group by a.user_id,b.no,b.name,d.name
+        order by d.name
+    </select>
+
+    <select id="exportLegworkList" resultMap="BaseResultMap">
+        select a.*,
+        b.name as userName,
+        b.no as userNo,
+        d.name as officeName
+        from SIGN_LEGWORK a , sys_office d,sys_user b
+        where a.del_flag = 0
+        and b.del_flag = 0
+        and a.user_id=b.id
+        and b.office_id = d.id
+        <if test="offices != null and offices.size() >0">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                b.office_id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            AND b.name like '%'||#{request.userName}||'%'
+        </if>
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and a.creation_date between to_date (#{request.startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and to_date
+            ( #{request.endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        order by d.name
+    </select>
+
+    <!--查询用户外勤打卡记录-->
+    <select id="getListByUserDay" resultMap="BaseResultMap">
+        select * from SIGN_LEGWORK
+        where
+            to_days(creation_date) &gt;= to_days( #{signDay})
+        and to_days(creation_date) &lt; to_days( #{signDay})+1
+        and user_id=#{userId} and del_flag='0'
+         order by creation_date
+    </select>
+
+    <select id="getListByUserDayOld" resultMap="BaseResultMap">
+        select * from SIGN_LEGWORK
+        where
+         to_char(creation_date,'yyyy-mm-dd') = #{signDay} and
+         user_id=#{userId} and del_flag='0'
+         order by creation_date
+    </select>
+
+<!--    <select id="springSumList" resultType="com.itlozg.admin.model.response.SignSpringOutAllResponse">-->
+<!--        select su.dept_id deptId,-->
+<!--        su.COMPANY_NAME companyName,-->
+<!--        su.DEPT_NAME deptName,-->
+<!--        temp.type type,-->
+<!--        count(*) count-->
+<!--        from (select null as dateList, s.user_id, '中高风险区' type-->
+<!--        from sign_legwork s-->
+<!--        inner join epidemic_area a-->
+<!--        on ((s.province || s.city || s.district like-->
+<!--        a.province || a.city || a.district || '%') or-->
+<!--        (s.city || s.district = a.city || a.district))-->
+<!--        and to_char(s.creation_date, 'yyyy-mm-dd') =-->
+<!--        to_char(a.creation_date, 'yyyy-mm-dd')-->
+<!--        and to_char(a.creation_date, 'yyyy-mm-dd') &gt;=-->
+<!--        #{request.startDate}-->
+<!--        and to_char(a.creation_date, 'yyyy-mm-dd') &lt;=-->
+<!--        #{request.endDate}-->
+<!--        and a.del_flag = '0'-->
+<!--        and s.del_flag = '0'-->
+<!--        group by s.user_id-->
+<!--        union-->
+<!--        select r.datelist,-->
+<!--        r.id,-->
+<!--        case-->
+<!--        when r.mint is null then-->
+<!--        '全天缺卡'-->
+<!--        when r.mint &gt;= '12:00:00' then-->
+<!--        '上午缺卡'-->
+<!--        when r.maxt &lt;= '12:00:00' then-->
+<!--        '下午缺卡'-->
+<!--        end type-->
+<!--        from (select datelist, id, mint, maxt-->
+<!--        from (select d.dateList, su.id-->
+<!--        from (select to_char(to_date(#{request.startDate},-->
+<!--        'yyyy-mm-dd') +-->
+<!--        rownum - 1,-->
+<!--        'yyyy-mm-dd') as dateList-->
+<!--        from dual-->
+<!--        connect by rownum &lt;=-->
+<!--        trunc(to_date(#{request.endDate},-->
+<!--        'yyyy-mm-dd') - -->
+<!--        to_date(#{request.startDate},-->
+<!--        'yyyy-mm-dd') + 1)) d,-->
+<!--        sys_user su-->
+<!--        where su.del_flag = '0'-->
+<!--        and su.is_disable = '0') i-->
+<!--        left join (select user_id,-->
+<!--        to_char(creation_date,-->
+<!--        'yyyy-mm-dd') creation_date,-->
+<!--        min(sign_time) mint,-->
+<!--        max(sign_time) maxt-->
+<!--        from sign_legwork-->
+<!--        where to_char(creation_date,-->
+<!--        'yyyy-mm-dd') &gt;=-->
+<!--        #{request.startDate}-->
+<!--        and to_char(creation_date,-->
+<!--        'yyyy-mm-dd') &lt;=-->
+<!--        #{request.endDate}-->
+<!--        and del_flag = '0'-->
+<!--        group by user_id,-->
+<!--        to_char(creation_date,-->
+<!--        'yyyy-mm-dd')) s-->
+<!--        on s.creation_date = i.dateList-->
+<!--        and s.user_id = i.id) r) temp-->
+<!--        inner join sys_user_v2 su-->
+<!--        on temp.user_id = su.id-->
+<!--        where-->
+<!--        (-->
+<!--        <foreach collection="request.offices" index="index" item="item" separator="or">-->
+<!--            su.dept_id  = #{item}-->
+<!--        </foreach>-->
+<!--        )-->
+<!--        group by su.COMPANY_NAME, su.dept_id, su.DEPT_NAME, temp.type-->
+
+<!--    </select>-->
+<!--    <select id="springDetailList" resultType="com.itlozg.admin.model.response.SignSpringOutDetailResponse">-->
+<!--with a as(-->
+<!--        select-->
+<!--        su.no userNo,-->
+<!--        su.id userId,-->
+<!--        su.name userName,-->
+<!--        sl.sign_time     signTime,-->
+<!--        sl.clock_in_site clockInSite,-->
+<!--        sl.remarks       remarksInfo,-->
+<!--        su.dept_id  deptId,-->
+<!--       su.COMPANY_NAME companyName,-->
+<!--       su.DEPT_NAME deptName,-->
+<!--       su.office_name officeName,-->
+<!--       temp.type type,-->
+<!--       case when temp.datelist is null then  to_char(sl.creation_date, 'yyyy-mm-dd')-->
+<!--         else temp.datelist  end createdDate-->
+<!--  from (select to_char(s.creation_date, 'yyyy-mm-dd') as dateList, s.user_id, '中高风险区' type-->
+<!--          from sign_legwork s-->
+<!--         inner join epidemic_area a-->
+<!--            on ((s.province || s.city || s.district like-->
+<!--               a.province || a.city || a.district || '%') or-->
+<!--               (s.city || s.district = a.city || a.district))-->
+<!--           and to_char(s.creation_date, 'yyyy-mm-dd') =-->
+<!--               to_char(a.creation_date, 'yyyy-mm-dd')-->
+<!--           and to_char(a.creation_date, 'yyyy-mm-dd') &gt;= #{request.startDate}-->
+<!--           and to_char(a.creation_date, 'yyyy-mm-dd') &lt;= #{request.endDate}-->
+<!--           and a.del_flag = '0'-->
+<!--           and s.del_flag = '0'-->
+<!--         group by s.user_id,to_char(s.creation_date, 'yyyy-mm-dd')-->
+<!--        union-->
+<!--        select r.datelist,-->
+<!--               r.id,-->
+<!--               case-->
+<!--                 when r.mint is null then-->
+<!--                  '全天缺卡'-->
+<!--                 when r.mint &gt;= '12:00:00' then-->
+<!--                  '上午缺卡'-->
+<!--                 when r.maxt &lt;= '12:00:00' then-->
+<!--                  '下午缺卡'-->
+<!--                 else '正常打卡'-->
+<!--               end type-->
+<!--          from (select datelist, id, mint, maxt-->
+<!--                  from (select d.dateList, su.id-->
+<!--                          from (select to_char(to_date(#{request.startDate},-->
+<!--                                                       'yyyy-mm-dd') + rownum - 1,-->
+<!--                                               'yyyy-mm-dd') as dateList-->
+<!--                                  from dual-->
+<!--                                connect by rownum &lt;=-->
+<!--                                           trunc(to_date(#{request.endDate},-->
+<!--                                                         'yyyy-mm-dd') - -->
+<!--                                                 to_date(#{request.startDate},-->
+<!--                                                         'yyyy-mm-dd') + 1)) d,-->
+<!--                               sys_user su-->
+<!--                         where su.del_flag = '0'-->
+<!--                           and su.is_disable = '0') i-->
+<!--                  left join (select user_id,-->
+<!--                                   to_char(creation_date, 'yyyy-mm-dd') creation_date,-->
+<!--                                   min(sign_time) mint,-->
+<!--                                   max(sign_time) maxt-->
+<!--                              from sign_legwork-->
+<!--                             where to_char(creation_date, 'yyyy-mm-dd') &gt;=-->
+<!--                                   #{request.startDate}-->
+<!--                               and to_char(creation_date, 'yyyy-mm-dd') &lt;=-->
+<!--                                   #{request.endDate}-->
+<!--                               and del_flag = '0'-->
+<!--                             group by user_id,-->
+<!--                                      to_char(creation_date, 'yyyy-mm-dd')) s-->
+<!--                    on s.creation_date = i.dateList-->
+<!--                   and s.user_id = i.id) r) temp-->
+<!-- inner join sys_user_v2 su-->
+<!--    on temp.user_id = su.id-->
+<!-- left join sign_legwork sl-->
+<!--    on temp.dateList = to_char(sl.creation_date, 'yyyy-mm-dd')-->
+<!--   and sl.user_id = temp.user_id-->
+<!-- where  (-->
+<!--        <foreach collection="request.offices" index="index" item="item" separator="or">-->
+<!--            su.dept_id  = #{item}-->
+<!--        </foreach>-->
+<!--        )-->
+<!-- )-->
+<!--       select userId,-->
+<!--        userNo,-->
+<!--        userName,-->
+<!--        case type  when '上午缺卡' then null-->
+<!--        when '下午缺卡' then null-->
+<!--        when '正常打卡' then min(signTime)||'-'||max(signTime)-->
+<!--        else min(signTime) end signTime,-->
+<!--        min(clockInSite) clockInSite,-->
+<!--        max(remarksInfo) remarksInfo,-->
+<!--        deptId,-->
+<!--       companyName,-->
+<!--       deptName,-->
+<!--       officeName,-->
+<!--       type,-->
+<!--       createdDate from a-->
+<!--        group by-->
+<!--        userId,-->
+<!--        userNo,-->
+<!--        userName,-->
+<!--        deptId,-->
+<!--       companyName,-->
+<!--       deptName,-->
+<!--       officeName,-->
+<!--       type,-->
+<!--       createdDate-->
+<!--    </select>-->
+
+    <select id="getSignOutList" resultMap="BaseResultMap">
+        select * from SIGN_LEGWORK
+        where
+        to_char(creation_date,'yyyy-mm-dd') = to_char(sysdate - 1,'yyyy-mm-dd')  and del_flag = '0'
+    </select>
+
+
+    <select id="updateSignOut">
+        update SIGN_LEGWORK
+        set province = #{province},
+            city = #{city},
+            district = #{district}
+        where id = #{id}
+    </select>
+
+    <select id = "getUserDept" resultType="java.lang.String">
+        select so.id
+      from sys_user_department ud
+     inner join (select distinct dept_id id from sys_user) dept
+        on dept.id = ud.office_id
+     inner join sys_office so
+        on so.id = dept.id
+     where ud.user_id = #{userId}
+       and ud.del_flag = 0
+       and so.del_flag = 0
+    </select>
+    <select id="getUserCompDept" resultType="java.lang.String">
+        select so.id
+      from sys_user_department ud
+     inner join (select distinct dept_id id from sys_user where  company_id = #{officeId}) dept
+        on dept.id = ud.office_id
+     inner join sys_office so
+        on so.id = dept.id
+     where ud.user_id = #{userId}
+       and ud.del_flag = 0
+       and so.del_flag = 0
+    </select>
+</mapper>

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.SignRuleMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.SignRule">
+        <id column="id" property="id"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="creation_date" property="creationDate"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="last_updated_by" property="lastUpdatedBy"/>
+        <result column="last_update_date" property="lastUpdateDate"/>
+        <result column="remarks" property="remarks"/>
+
+        <result column="rule_type" property="ruleType"/>
+        <result column="name" property="name"/>
+        <result column="address_name" property="addressName"/>
+        <result column="work_days" property="workDays"/>
+        <result column="work_time" property="workTime"/>
+        <result column="off_time" property="offTime"/>
+        <result column="tip_time" property="tipTime"/>
+        <result column="tip_msg" property="tipMsg"/>
+        <result column="end_time" property="endTime"/>
+        <result column="photograph_clock" property="photographClock"/>
+        <result column="location_clock" property="locationClock"/>
+        <result column="status" property="status"/>
+        <result column="cross_day" property="crossDay"/>
+        <result column="am_off_time" property="amOffTime"/>
+        <result column="pm_work_time" property="pmWorkTime"/>
+        <result column="is_quartic" property="isQuartic"/>
+        <result column="come_veriface" property="comeVeriface"/>
+        <result column="leave_veriface" property="leaveVeriface"/>
+        <result column="WORK_HOURS" property="workHours"/>
+        <result column="IS_EDIT_TIMELENGTH" property="isEditTimelength"/>
+        <result column="handpunch" property="handpunch"/>
+        <result column="rang_id" property="rangeId"/>
+    </resultMap>
+
+    <select id="getList" resultMap="BaseResultMap">
+        select *
+        from sign_rule
+        where del_flag='0'
+        <if test="ids != null">
+            and
+            (
+            <foreach collection="ids" index="index" item="item" separator="or">
+                id = #{item.signRuleId}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.name !=null and request.name !=''">
+            and name like '%'||#{request.name}||'%'
+        </if>
+        order by creation_date asc
+    </select>
+
+    <select id="getRuleList" resultMap="BaseResultMap">
+        select *
+        from sign_rule
+        where del_flag='0'
+        <if test="ids != null">
+            and
+            (
+            <foreach collection="ids" index="index" item="item" separator="or">
+                id = #{item.signRuleId}
+            </foreach>
+            )
+        </if>
+        order by creation_date asc
+    </select>
+
+    <select id="getAll" resultMap="BaseResultMap">
+        select *
+        from sign_rule
+        where del_flag = '0'
+        order by creation_date asc
+    </select>
+
+    <select id="getByName" resultMap="BaseResultMap">
+        select *
+        from sign_rule
+        where name = #{name}
+          and del_flag = '0'
+    </select>
+
+    <select id="getRulesInUse" resultMap="BaseResultMap">
+        select *
+        from sign_rule
+        where del_flag = '0'
+          and id in (select rule_id from sign_final where del_flag = '0' group by rule_id)
+    </select>
+
+    <select id="getRulesInUseWithTypeFilter" resultMap="BaseResultMap">
+        select * from sign_rule where del_flag='0'
+        and id in(select rule_id from sign_final where del_flag='0' group by rule_id)
+        <if test="ruleType !=null and ruleType !='' ">
+            and rule_type = #{ruleType}
+        </if>
+    </select>
+
+    <select id="getRulesInUseTask" resultMap="BaseResultMap">
+        select *
+        from sign_rule
+        where del_flag = '0'
+          and id = '4bc2f010b3354b42ad88bd58c12c3f6f'
+    </select>
+
+    <select id="getBySignFinalUser" resultMap="BaseResultMap">
+        select sr.*
+        FROM sign_rule sr
+        where sr.del_flag = '0'
+          and id in (select sf.rule_id
+                     from sign_final sf
+                     where sf.del_flag = '0'
+                       and sf.user_id = #{userId})
+          and rownum = 1
+    </select>
+
+    <select id="getBySignFinalUserOld" resultMap="BaseResultMap">
+        select sr.*
+        FROM sign_rule sr
+        where sr.del_flag = '0'
+          and id = (select sf.rule_id
+                    from sign_final sf
+                    where sf.del_flag = '0'
+                      and sf.rule_id = sr.id
+                      and sf.user_id = #{userId})
+          and rownum = 1
+    </select>
+
+    <update id="deleteData">
+        update sign_rule
+        set del_flag=#{DEL_FLAG_DELETE}
+        where id = #{id}
+    </update>
+
+    <select id="findByRuleId" resultMap="BaseResultMap" resultType="com.itlozg.admin.entity.SignRule">
+        select *
+        from sign_rule
+        where del_flag = '0'
+          and id = #{id}
+    </select>
+
+    <select id="getListNotPermission" resultMap="BaseResultMap">
+        select *
+        from sign_rule
+        where del_flag = '0'
+          and id not in (select sign_rule_id from sign_rules_permission where del_flag = 0 group by sign_rule_id)
+    </select>
+    <select id="selectRuleList" resultType="com.itlozg.admin.entity.SignRule">
+        select rl.id, rl.name, rl.created_by, rl.address_name, rg.remarks railName
+        from sign_rule rl
+        left join sign_range rg on rl.rang_id = rg.id
+        where rl.del_flag = '0'
+        <if test="ruleName != null and ruleName != '' ">
+            AND rl.name like concat('%', #{ruleName,jdbcType=VARCHAR},'%')
+        </if>
+        <if test="companyName != null and companyName != ''">
+            AND rl.company_name like concat('%',#{companyName},'%')
+        </if>
+    </select>
+
+
+</mapper>

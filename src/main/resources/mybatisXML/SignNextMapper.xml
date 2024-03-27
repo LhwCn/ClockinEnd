@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.SignNextMapper">
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.SignNext">
+        <id column="id" property="id"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="creation_date" property="creationDate"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="last_updated_by" property="lastUpdatedBy"/>
+        <result column="last_update_date" property="lastUpdateDate"/>
+        <result column="remarks" property="remarks"/>
+
+        <result column="user_id" property="userId"/>
+        <result column="need_check" property="needCheck"/>
+        <result column="come_must_time" property="comeMustTime"/>
+        <result column="leave_must_time" property="leaveMustTime"/>
+        <result column="come_time" property="comeTime"/>
+        <result column="leave_time" property="leaveTime"/>
+        <result column="come_longitude" property="comeLongitude"/>
+        <result column="come_latitude" property="comeLatitude"/>
+        <result column="come_address" property="comeAddress"/>
+        <result column="come_addressName" property="comeAddressName"/>
+        <result column="come_remarks" property="comeRemarks"/>
+        <result column="leave_longitude" property="leaveLongitude"/>
+        <result column="leave_latitude" property="leaveLatitude"/>
+        <result column="leave_address" property="leaveAddress"/>
+        <result column="leave_addressname" property="leaveAddressName"/>
+        <result column="leave_remarks" property="leaveRemarks"/>
+        <result column="sign_type" property="signType"/>
+        <result column="tip_time" property="tipTime"/>
+        <result column="tip_msg" property="tipMsg"/>
+        <result column="is_must" property="isMust"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="sign_date" property="signDate"/>
+        <result column="cross_day" property="crossDay"/>
+        <result column="sign_way" property="signWay"/>
+        <result column="sign_way_pm" property="signWayPm"/>
+        <result column="update_time_flag" property="updateTimeFlag"/>
+        <result column="am_off_time" property="amOffTime"/>
+        <result column="pm_work_time" property="pmWorkTime"/>
+        <result column="root_val" property="rootVal"/>
+        <result column="userNo" property="userNo"/>
+        <result column="handpunch" property="handpunch"/>
+        <result column="group_id" property="groupId"/>
+        <result column="legwork_flag" property="legworkFlag"/>
+    </resultMap>
+    <insert id="autoSave">
+        insert
+        sign_next(
+										id,
+										created_by,
+										creation_date,
+										del_flag,
+										last_updated_by,
+										last_update_date,
+										user_id,
+										sign_date,
+										come_must_time,
+										leave_must_time,
+										sign_type,
+										is_must,
+										tip_time,
+										tip_msg,
+										rule_id,
+										sign_way,
+										update_time_flag,
+                                        group_id
+										)
+        select uuid()         as id,
+               'schedulejob'  as created_by,
+               SYSDATE()      as creation_date,
+               '0'            as del_flag,
+               'schedulejob'  as last_updated_by,
+               SYSDATE()      as last_update_date,
+               usercode       as user_id,
+               CURRENT_DATE() as sign_date,
+               work_time      as come_must_time,
+               off_time       as leave_must_time,
+               rule_type      as sign_type,
+               '0'            as is_must,
+               '10'           as tip_time,
+               '请打卡'       as tip_msg,
+               rule_id        as rule_id,
+               '0'            as sign_way,
+               '1'            as update_time_flag,
+               group_id       as group_id
+        from v_employeesimple ep
+                 INNER JOIN sign_final sf on ep.usercode = sf.user_id
+                 INNER JOIN sign_rule rl on sf.rule_id = rl.id;
+    </insert>
+
+    <select id="getAll" resultMap="BaseResultMap">
+        select *
+        from sign_next
+        where del_flag = '0'
+    </select>
+
+    <select id="getByRuleId" resultMap="BaseResultMap">
+        select *
+        from sign_next
+        where rule_id = #{ruleId}
+          and del_flag = '0'
+    </select>
+
+    <select id="getBySignDate" resultMap="BaseResultMap">
+        select *
+        from sign_next
+        where to_char(sign_date, 'yyyy-mm-dd') = #{signDate}
+          and del_flag = '0'
+    </select>
+
+    <select id="getBySignDateOne" resultMap="BaseResultMap">
+        select *
+        from sign_next
+        where to_char(sign_date, 'yyyy-mm-dd') = #{signDate}
+          and del_flag = '0'
+          and user_id = #{userId}
+    </select>
+
+    <select id="getNeedCheckData" resultMap="BaseResultMap">
+        select *
+        from sign_next t
+        where t.del_flag = '0'
+          and t.last_update_date > trunc(sysdate - 1)
+          and t.need_check = '1'
+    </select>
+
+    <select id="getSignListByStatistics" resultMap="BaseResultMap">
+        select *
+        from sign_next
+        where to_char(sign_date, 'yyyy-mm-dd') = #{signDate}
+          and del_flag = '0'
+    </select>
+
+    <select id="getSignNextDate" resultMap="BaseResultMap">
+        select a.*,
+        su.name as userName,
+        so.name as officeName
+        from sign_next a
+        left join sys_user su on a.user_id = su.id
+        left join sys_office so on su.office_id = so.id
+        where a.sign_date between to_date (#{startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and
+        to_date( #{endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        and a.del_flag='0'
+        and a.user_id in
+        <foreach collection="userIds" item="userIds" index="index"
+                 open="(" close=")" separator=",">
+            #{userIds}
+        </foreach>
+    </select>
+
+    <select id="getSignInfoByUserToday" resultMap="BaseResultMap">
+        select n.*,
+               r.location_clock   as locationClock,
+               r.photograph_clock as photographClock,
+               r.name             as ruleName,
+               r.am_off_time      as am_off_time,
+               r.pm_work_time     as pm_work_time,
+               r.handpunch        as handpunch
+        from sign_next n
+                 left join sign_rule r on r.id = n.rule_id
+        where n.sign_date = #{dateNow}
+          and n.user_id = #{userId}
+          and n.del_flag = '0'
+        order by n.sign_date
+    </select>
+
+    <select id="getSignInfoByUserTodayOnlyInfo" resultMap="BaseResultMap">
+        select n.*
+        from sign_next n
+        where (
+                (to_days(n.sign_date) &gt;= to_days(#{dateNow})
+                    and to_days(n.sign_date) &lt; to_days(#{dateNow}) + 1)
+                OR
+                (
+                        (to_days(n.sign_date) &gt;= to_days(#{dateBefore})
+                            and to_days(n.sign_date) &lt; to_days(#{dateBefore}) + 1)
+                        and n.cross_day = '1')
+            )
+          and n.user_id = #{userId}
+          and n.del_flag = '0'
+        order by n.sign_date
+    </select>
+
+    <select id="getSignInfoByUserTodayOld" resultMap="BaseResultMap">
+        select n.*,
+               r.location_clock   as locationClock,
+               r.photograph_clock as photographClock,
+               r.name             as ruleName,
+               r.am_off_time      as am_off_time,
+               r.pm_work_time     as pm_work_time
+        from sign_next n
+                 left join sign_rule r on r.id = n.rule_id
+        where (to_char(n.sign_date, 'yyyy-mm-dd') = #{dateNow} OR
+               (to_char(n.sign_date, 'yyyy-mm-dd') = #{dateBefore} and n.cross_day = '1'))
+          and n.user_id = #{userId}
+          and n.del_flag = '0'
+        order by n.sign_date
+    </select>
+
+    <select id="getSignInfoByUserDay" resultMap="BaseResultMap">
+        select n.*,
+               r.location_clock   as locationClock,
+               r.photograph_clock as photographClock,
+               r.name             as ruleName,
+               r.am_off_time      as am_off_time,
+               r.pm_work_time     as pm_work_time
+        from sign_next n
+                 left join sign_rule r on r.id = n.rule_id
+        where to_days(n.sign_date) &gt;= to_days(#{dayVal})
+          and to_days(n.sign_date) &lt; to_days(#{dayVal}) + 1
+          and n.user_id = #{userId}
+          and n.del_flag = '0' limit 1
+--           and rownum = 1
+    </select>
+
+
+    <select id="getSignNextCount" resultType="java.lang.String">
+        select count(1)
+        from sign_next n
+        where n.sign_date &gt;= to_date(#{dayVal}, 'yyyy-mm-dd')
+          and n.sign_date &lt; to_date(#{dayVal}, 'yyyy-mm-dd') + 1
+          and n.del_flag = '0'
+    </select>
+
+    <select id="getSignInfoByUserDayOld" resultMap="BaseResultMap">
+        select n.*,
+               r.location_clock   as locationClock,
+               r.photograph_clock as photographClock,
+               r.name             as ruleName,
+               r.am_off_time      as am_off_time,
+               r.pm_work_time     as pm_work_time
+        from sign_next n
+                 left join sign_rule r on r.id = n.rule_id
+        where to_char(n.sign_date, 'yyyy-mm-dd') = #{dayVal}
+          and n.user_id = #{userId}
+          and n.del_flag = '0'
+          and rownum = 1
+    </select>
+
+    <update id="clearSignInfo">
+        update sign_next
+        set come_time      =null,
+            leave_time     =null,
+            come_longitude=null,
+            come_latitude=null,
+            leave_longitude=null,
+            leave_latitude=null
+        where user_id = #{userId}
+          and to_char(sign_date, 'yyyy-mm-dd') = to_char(sysdate, 'yyyy-mm-dd')
+    </update>
+
+    <select id="getUserIdsByTodayLeaveTimeIsNone" resultType="string">
+        select user_id
+        from sign_next
+        where to_char(sign_date, 'yyyy-mm-dd') = to_char(#{date}, 'yyyy-mm-dd')
+          and RULE_ID = #{ruleId}
+          and del_flag = '0'
+          and leave_time is null
+    </select>
+
+    <select id="getUserIdsByTodayComeTimeIsNone" resultType="string">
+        select user_id
+        from sign_next
+        where to_char(sign_date, 'yyyy-mm-dd') = to_char(#{date}, 'yyyy-mm-dd')
+          and RULE_ID = #{ruleId}
+          and del_flag = '0'
+          and come_time is null
+    </select>
+
+    <select id="getStatistics" resultMap="BaseResultMap">
+        select sn.*,su.name as userName, su.no as userNo,so.name as officeName,sr.name as ruleName from sign_next sn
+        left join sys_user su on su.id=sn.user_id
+        left join sys_office so on su.office_id=so.id
+        left join sign_rule sr on sr.id=sn.rule_id
+        WHERE sn.del_flag = '0'
+        and sn.come_time is null
+        and to_char(sn.sign_date,'yyyy-mm-dd') = to_char(sysdate-1,'yyyy-mm-dd')
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                so.id = #{item.id}
+            </foreach>
+            )
+        </if>
+    </select>
+
+    <select id="getStatisticsByRecent" resultMap="BaseResultMap">
+        select sn.*,su.name as userName, su.no as userNo,so.name as officeName,sr.name as ruleName from sign_next sn
+        left join sys_user su on su.id=sn.user_id
+        left join sys_office so on su.office_id=so.id
+        left join sign_rule sr on sr.id=sn.rule_id
+        WHERE sn.del_flag = '0'
+        <if test="request != null and request.startDate !=null and request.startDate !=''and request.endDate !=null and request.endDate !='' ">
+            and sn.sign_date between to_date (#{request.startDate}||' 00:00:00','yyyy-mm-dd hh24:mi:ss') and to_date
+            ( #{request.endDate}||' 23:59:59' ,'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                so.id = #{item.id}
+            </foreach>
+            )
+        </if>
+        <if test="request != null and request.ruleId !=null and request.ruleId !='' ">
+            AND sr.id = #{request.ruleId}
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !='' ">
+            AND su.name like '%'||#{request.userName}||'%'
+        </if>
+        <if test="request != null and request.userNo !=null and request.userNo !='' ">
+            AND su.no = #{request.userNo}
+        </if>
+        order by sn.sign_date desc ,ROWNUM
+    </select>
+
+    <select id="getSignNextNoNormal" resultMap="BaseResultMap">
+        select n.*,
+               r.location_clock   as locationClock,
+               r.photograph_clock as photographClock,
+               r.name             as ruleName,
+               r.am_off_time      as am_off_time,
+               r.pm_work_time     as pm_work_time
+        from sign_next n
+                 left join sign_rule r on r.id = n.rule_id
+        where n.sign_date &gt;= to_date(#{dayVal}, 'yyyy-mm-dd')
+          and n.sign_date &lt; to_date(#{dayVal}, 'yyyy-mm-dd') + 1
+          and n.user_id = #{userId}
+          and n.del_flag = '0'
+          and rownum = 1
+    </select>
+
+    <update id="updateNeedCheckData">
+        update sign_next
+        set last_update_date=SYSDATE,
+            need_check='1'
+        where sign_date &gt;= to_date(#{startDate}, 'yyyy-mm-dd')
+          and sign_date &lt; to_date(#{endDate}, 'yyyy-mm-dd') + 1
+          and user_id = #{userId}
+    </update>
+    <update id="autoSaveCarInfo">
+        update sign_next
+        set come_time       = #{comeTime},
+            come_longitude=#{comeLongitude},
+            come_latitude=#{comeLatitude},
+            come_addressname=#{comeAddressName},
+            come_address=#{comeAddress}
+        WHERE sign_date = CURDATE()
+          and user_id = #{userId}
+          and (come_time = '' OR come_time IS NULL)
+    </update>
+
+    <select id="saveOverTimeDataOffice" statementType="CALLABLE" parameterType="java.util.Map">
+      <![CDATA[
+        {call P_SIGN_OFFICE_D(#{XDATA,mode=OUT,jdbcType=VARCHAR,javaType=String},
+                              #{P_START_DATE,mode=IN,jdbcType=VARCHAR})}
+        ]]>
+    </select>
+
+    <select id="getSignInfoAllToday" resultType="com.itlozg.admin.entity.vo.SignNextVO">
+        SELECT sn.user_id           as userId,
+               v.username           as userName,
+               sn.sign_date         as signDate,
+               sn.come_must_time    as comeMustTime,
+               sn.leave_must_time   as leaveMustTime,
+               sn.come_time         as comeTime,
+               sn.leave_time        as leaveTime,
+               sn.come_longitude    as comeLongitude,
+               sn.come_latitude     as comeLatitude,
+               sn.come_address      as comeAddress,
+               sn.come_addressname  as comeAddressname,
+               sn.come_remarks      as comeRemarks,
+               sn.leave_longitude   as leaveLongitude,
+               sn.leave_latitude    as leaveLatitude,
+               sn.leave_address     as leaveAddress,
+               sn.leave_addressname as leaveAddressname,
+               sn.leave_remarks     as leaveRemarks,
+               sn.sign_type         as signType,
+               sn.is_must           as isMust,
+               sn.rule_id           as ruleId,
+               sn.id                as id,
+               sn.creation_date     as creationDate,
+               sn.last_update_date  as lastUpdateDate,
+               sn.del_flag          as delFlag,
+               sn.remarks,
+               sn.created_by        as createdBy,
+               sn.last_updated_by   as lastUpdatedBy,
+               sn.sign_way          as signWay,
+               sn.sign_way_pm       as signWayPm,
+               sn.update_time_flag  as updateTimeFlag,
+               sn.need_check        as needCheck,
+               sn.legwork_flag      as legworkFlag,
+               sn.cross_day         as crossDay,
+               sf.template_group    as templateGroup,
+               sf.template_user     as templateUser
+        FROM sign_next sn
+                 LEFT JOIN v_employee v on v.usercode = sn.user_id
+                 left JOIN sign_final sf on sf.user_id = sn.user_id
+        WHERE sn.group_id = #{groupId}
+          and STR_TO_DATE(sn.sign_date, '%Y-%m-%d') = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+        order by sn.sign_date
+    </select>
+
+    <!--查询考勤人员的信息，从中抽取一部分信息，填充一些信息，拼装成一个考勤计划-->
+    <select id="getAutoNextInfo" resultType="com.itlozg.admin.entity.vo.SignNextVO">
+        select UUID()         as id,
+               CURRENT_DATE() as signDate,
+               user_id        as userId,
+               group_id       as groupId,
+               template_group as templateGroup,
+               template_user  as templateUser,
+               legwork_flag   as legworkFlag,
+               '10'           as tipTime,
+               '请及时打卡'   as tipMsg,
+               '0'            as isMust,         -- 是否必须打卡：0 是；1 否
+               '0'            as signWay,        -- 打卡方式：0 正常；1 自动
+               '1'            as updateTimeFlag, -- 更新时间标识：0 是；1 否
+               SYSDATE()      as creationDate,
+               'scheduleJob'  as createdBy,
+               SYSDATE()      as lastUpdateDate,
+               'scheduleJob'  as lastUpdatedBy,
+               '0'            as del_flag        -- 逻辑删除：0 启用；1 删除
+        from sign_final
+    </select>
+
+    <!-- 查询固定打卡的人员的信息，从中抽取一部分信息，填充一些信息，拼装成一个考勤计划 -->
+    <select id="getSureUser" resultType="com.itlozg.admin.entity.vo.SignNextVO">
+        SELECT UUID()           AS id,
+               CURRENT_DATE ()  AS signDate,
+               u.user_id        AS userId,
+               u.group_id       AS groupId,
+               u.template_group AS templateGroup,
+               u.template_user  AS templateUser,
+               u.legwork_flag   AS legworkFlag,
+               u.free_flag      AS freeFlag,
+               u.cross_flag     AS crossFlag,
+               '10'             AS tipTime,
+               '请及时打卡'      AS tipMsg,
+               '0'              AS isMust,
+               '0'              AS signWay,
+               '1'              AS updateTimeFlag,
+               SYSDATE()        AS creationDate,
+               'scheduleJob'    AS createdBy,
+               SYSDATE()        AS lastUpdateDate,
+               'scheduleJob'    AS lastUpdatedBy,
+               '0'              AS del_flag
+        FROM sign_final u
+                 INNER JOIN sign_group g
+                            ON u.group_id = g.id
+        WHERE u.free_flag = 0
+          AND g.free_flag = 0;
+    </select>
+
+    <!-- 查询自由打卡的人员的信息，从中抽取一部分信息，填充一些信息，拼装成一个考勤计划-->
+    <select id="getFreeUser" resultType="com.itlozg.admin.entity.vo.SignNextVO">
+        SELECT UUID()           AS id,
+               CURRENT_DATE ()  AS signDate,
+               u.user_id        AS userId,
+               u.group_id       AS groupId,
+               u.template_group AS templateGroup,
+               u.template_user  AS templateUser,
+               u.legwork_flag   AS legworkFlag,
+               CASE WHEN
+                   u.cross_flag = 1 OR g.cross_flag = 1
+                       THEN '1'
+                   ELSE '0' END AS crossDay,
+               '10'             AS tipTime,
+               '请及时打卡'      AS tipMsg,
+               '0'              AS isMust,
+               '0'              AS signWay,
+               '1'              AS updateTimeFlag,
+               SYSDATE()        AS creationDate,
+               'scheduleJob'    AS createdBy,
+               SYSDATE()        AS lastUpdateDate,
+               'scheduleJob'    AS lastUpdatedBy,
+               '0'              AS del_flag
+        FROM sign_final u
+                 INNER JOIN sign_group g
+                            ON u.group_id = g.id
+        WHERE u.free_flag = 1
+           OR g.free_flag = 1;
+    </select>
+</mapper>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.itlozg.admin.mapper.SignTemplateMapper">
+    <!-- 根据考勤组人员与模板关系表，获取对应的模板中的考勤规则集合 -->
+    <select id="getSpecialTemplate" resultType="java.lang.String">
+        select st.rule_ids from
+        sign_template st
+        LEFT JOIN sign_template_user stu on st.id = stu.template_id
+        <where>
+            <if test="groupId!=null">
+                stu.group_id=#{groupId}
+            </if>
+            <if test="userId!=null">
+                and stu.user_id=#{userId}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据考勤组与模板关系表，获取对应的模板中的考勤规则集合 -->
+    <select id="getNormalTemplate" resultType="java.lang.String">
+        SELECT st.rule_ids
+        from sign_template st
+                 LEFT JOIN sign_template_group stg on stg.template_id = st.id
+        where stg.id = #{templateGroup}
+    </select>
+</mapper>

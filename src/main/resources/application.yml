@@ -1,0 +1,64 @@
+server:
+  port: 9090
+  servlet:
+    context-path: /clockin
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://172.16.162.252:3306/lovol-mis?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+#    url: jdbc:mysql://172.16.162.176:3306/lovol-mis?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: rooTlovoL@2023
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+  banner:
+    location: banner.txt
+
+  redis:
+    connect-timeout: 2000ms
+    database: 0
+    host: 172.16.162.252
+    port: 6379
+    password:
+
+mybatis-plus:
+  mapper-locations: classpath*:mybatisXML/*.xml #扫描所有mybatis的xml文件
+  configuration: #控制台打印sql
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+files:
+  upload:
+    path: /home/files/
+    #    url: http://jpn.wlovol.com:5000/api/file/
+    url: https://jpn.wlovol.com/api/file/
+#    path: D:/company/official-website/admin/files/
+
+#logging:
+#  level:
+#    debug
+#
+
+#  rabbitmq:
+#    host: 172.16.162.176
+#    port: 5672
+#    virtual-host: /
+#    username: admin
+#    password: admin
+#    listener:
+#      simple:
+#        prefetch: 1
+
+#mybatis:
+#  mapper-locations: classpath:mybatisXML/*.xml  #扫描所有mybatis的xml文件

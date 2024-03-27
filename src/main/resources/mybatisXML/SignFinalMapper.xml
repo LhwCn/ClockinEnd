@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itlozg.admin.mapper.SignFinalMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.itlozg.admin.entity.SignFinal">
+        <id column="id" property="id"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="creation_date" property="creationDate"/>
+        <result column="del_flag" property="delFlag"/>
+        <result column="last_updated_by" property="lastUpdatedBy"/>
+        <result column="last_update_date" property="lastUpdateDate"/>
+        <result column="remarks" property="remarks"/>
+        <result column="user_id" property="userId"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="userId" property="userId"/>
+        <result column="isType" property="isType"/>
+
+    </resultMap>
+
+    <select id="getByUserId" resultMap="BaseResultMap">
+      select * from sign_final where user_id=#{userId} and del_flag='0'
+    </select>
+
+    <select id="getAll" resultMap="BaseResultMap">
+        select * from sign_final where del_flag='0'
+    </select>
+
+    <!--获取未生成的数据-->
+    <select id="getAllNoGen" resultMap="BaseResultMap">
+        select f.* from sign_final f,sys_user u where f.del_flag='0'
+        and u.del_flag='0'
+        and u.id=f.user_id
+        and f.user_id not in (select user_id from sign_next where sign_date&gt;=TRUNC(SYSDATE) and sign_date&lt; TRUNC(SYSDATE)+1 and is_must=0)
+    </select>
+
+
+    <!--获取未生成的数据-->
+    <select id="getNeedNext" resultMap="BaseResultMap">
+        select f.* from sign_final f,sys_user u
+        where f.del_flag='0'
+        and u.del_flag='0'
+        and u.id=f.user_id
+        and u.id in(select user_id from sign_final where rule_id = 'ae75b32189d448069ab7ceff4b7d57de' and del_flag = 0)
+        and f.user_id not in (select user_id from sign_next where to_char(sign_date,'yyyy-mm-dd') = #{snDate})
+    </select>
+
+    <!--获取未生成的数据-->
+    <select id="getAllNoGenNextDay" resultMap="BaseResultMap">
+        select f.* from sign_final f,sys_user u where f.del_flag='0'
+        and u.del_flag='0'
+        and u.id=f.user_id
+        and f.user_id not in (select user_id from sign_next where sign_date&gt;=TRUNC(SYSDATE)+1 and sign_date&lt; TRUNC(SYSDATE)+2)
+    </select>
+
+    <select id="getAllTest" resultMap="BaseResultMap">
+        select * from sign_final where del_flag='0' and user_id like '000000%'
+    </select>
+
+    <select id="getByRuleId" resultMap="BaseResultMap">
+       select * from sign_final where del_flag='0' and rule_id=#{ruleId}
+    </select>
+
+    <select id="getUserNotSignRulelist" resultMap="BaseResultMap">
+        select a.id as userId,
+        a.name as userName,
+        a.no as userNo,
+        c.name as officeName,
+        d.name as deptName,
+        e.name as companyName
+        from sys_user a
+        left join sys_office c on a.office_id = c.id
+        left join sys_office d on a.dept_id = d.id
+        left join sys_office e on a.company_id = e.id
+        where a.del_flag = 0
+        <if test="request != null and request.isType !=null and request.isType == 0">
+            and a.id not in (select b.user_id from sign_final b where b.del_flag = 0 )
+        </if>
+        <if test="request != null and request.isType !=null and request.isType == 1">
+            and a.id in (select b.user_id from sign_final b where b.del_flag = 0 )
+        </if>
+        <if test="request != null and request.userName !=null and request.userName !=''">
+            and (a.name like '%'||#{request.userName}||'%' or a.login_name like '%'||#{request.userName}||'%')
+        </if>
+        <if test="request != null and request.userNo !=null and request.userNo !=''">
+            and a.no like '%'||#{request.userNo}||'%'
+        </if>
+        <if test="offices != null ">
+            and
+            (
+            <foreach collection="offices" index="index" item="item" separator="or">
+                nvl(c.id,d.id) = #{item.id}
+            </foreach>
+            )
+        </if>
+    </select>
+
+    <update id="deleteByRuleId">
+        update sign_final set del_flag='1',last_update_date =sysdate where rule_id=#{ruleId}
+    </update>
+</mapper>
